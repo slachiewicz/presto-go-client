@@ -282,12 +282,10 @@ func TestQueryResults_ConcurrentAccess(t *testing.T) {
 	var wg sync.WaitGroup
 	// Run 10 concurrent queries using the same session to verify no panics under race detector
 	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_, _, err := session.Query(context.Background(), "SELECT 1")
 			assert.NoError(t, err)
-		}()
+		})
 	}
 	wg.Wait()
 }
@@ -363,25 +361,21 @@ func TestMockServer_SetDefaultLatency_Concurrent(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Concurrently mutate defaultLatency while queries are in flight.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for i := 0; i < 50; i++ {
 			mockServer.SetDefaultLatency(time.Duration(i) * time.Millisecond)
 		}
-	}()
+	})
 
 	// Fire queries concurrently.
 	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			results, _, err := session.Query(context.Background(), "SELECT 1")
 			if err != nil {
 				return
 			}
 			_ = results.Drain(context.Background(), nil) // best-effort; test goal is race detection, not query success
-		}()
+		})
 	}
 
 	wg.Wait()
