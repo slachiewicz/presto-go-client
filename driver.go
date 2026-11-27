@@ -630,7 +630,8 @@ func WithSessionSetup(fn func(*Session)) ConnectorOption {
 
 // WithHTTPClient provides a custom http.Client to the connector. Use this for
 // advanced TLS configuration, custom transports, or proxy settings that cannot
-// be expressed through DSN parameters.
+// be expressed through DSN parameters. The connector uses a copy of hc that
+// refuses redirects unless hc sets CheckRedirect.
 func WithHTTPClient(hc *http.Client) ConnectorOption {
 	return func(c *prestoConnector) {
 		c.httpClient = hc
