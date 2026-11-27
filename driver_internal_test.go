@@ -406,6 +406,15 @@ func TestBuildTLSConfig(t *testing.T) {
 		assert.Nil(t, tlsCfg)
 	})
 
+	t.Run("ssl only uses default roots", func(t *testing.T) {
+		cfg := &dsnConfig{host: "localhost", port: "8443", ssl: true}
+		tlsCfg, err := cfg.buildTLSConfig()
+		require.NoError(t, err)
+		require.NotNil(t, tlsCfg)
+		assert.Nil(t, tlsCfg.RootCAs)
+		assert.False(t, tlsCfg.InsecureSkipVerify)
+	})
+
 	t.Run("skip verify only", func(t *testing.T) {
 		cfg := &dsnConfig{host: "localhost", port: "8080", sslSkipVerify: true}
 		tlsCfg, err := cfg.buildTLSConfig()

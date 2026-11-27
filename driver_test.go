@@ -356,6 +356,23 @@ func TestDriver_TransactionOptions(t *testing.T) {
 	})
 }
 
+func TestDriver_PasswordRequiresHTTPS(t *testing.T) {
+	mock := prestotest.NewMockPrestoServer()
+	defer mock.Close()
+
+	host := mock.URL()[len("http://"):]
+	connector, err := presto.NewConnector("presto://alice:secret@" + host)
+	require.NoError(t, err)
+
+	db := sql.OpenDB(connector)
+	defer db.Close()
+
+	var result int64
+	err = db.QueryRowContext(context.Background(), "SELECT 1").Scan(&result)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "requires an https server URL")
+}
+
 func TestDriver_OpenDB(t *testing.T) {
 	mock := prestotest.NewMockPrestoServer()
 	defer mock.Close()
