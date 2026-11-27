@@ -146,7 +146,7 @@ func TestValueToSQL(t *testing.T) {
 		{"float64", float64(3.14), "3.14"},
 		{"NaN", math.NaN(), "nan()"},
 		{"positive infinity", math.Inf(1), "infinity()"},
-		{"negative infinity", math.Inf(-1), "-infinity()"},
+		{"negative infinity", math.Inf(-1), "(-infinity())"},
 		{"bool true", true, "TRUE"},
 		{"bool false", false, "FALSE"},
 		{"string", "hello", "'hello'"},

@@ -207,14 +207,16 @@ func valueToSQL(v driver.Value) (string, error) {
 		return strconv.FormatInt(val, 10), nil
 	case float64:
 		// Presto has no literal for these values, and the formatted NaN or
-		// +Inf would be read as an identifier or an expression.
+		// +Inf would be read as an identifier or an expression. The functions
+		// return DOUBLE, so the parameter keeps its type. The negative case is
+		// parenthesized so that "a -?" does not become a "--" line comment.
 		switch {
 		case math.IsNaN(val):
 			return "nan()", nil
 		case math.IsInf(val, 1):
 			return "infinity()", nil
 		case math.IsInf(val, -1):
-			return "-infinity()", nil
+			return "(-infinity())", nil
 		}
 		return strconv.FormatFloat(val, 'f', -1, 64), nil
 	case bool:
