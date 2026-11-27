@@ -631,6 +631,36 @@ func TestSameServer(t *testing.T) {
 	assert.True(t, sameServer(u, defaultPort, false), "an explicit default port is the same server")
 }
 
+func TestSameServer_IPv6(t *testing.T) {
+	server, err := url.Parse("http://[::1]:8080")
+	require.NoError(t, err)
+	for _, tt := range []struct {
+		url  string
+		want bool
+	}{
+		{"http://[::1]:8080/v1/statement/q/1", true},
+		{"http://[::2]:8080/v1/statement/q/1", false},
+		{"http://[::1]:9090/v1/statement/q/1", false},
+	} {
+		u, err := url.Parse(tt.url)
+		require.NoError(t, err)
+		assert.Equal(t, tt.want, sameServer(u, server, false), tt.url)
+	}
+}
+
+func TestPrepareURL_ForceHTTPS(t *testing.T) {
+	server, err := url.Parse("http://presto.example.com:8080")
+	require.NoError(t, err)
+	c := &Client{serverUrl: server, forceHTTPS: true}
+
+	u, err := c.prepareURL("http://presto.example.com:8080/v1/statement/q/1")
+	require.NoError(t, err)
+	assert.Equal(t, "https://presto.example.com:8080/v1/statement/q/1", u.String())
+
+	_, err = c.prepareURL("http://other.example.com:8080/v1/statement/q/1")
+	assert.ErrorContains(t, err, "is not on the configured server")
+}
+
 func TestFetchNextBatch_RefusesAnotherServer(t *testing.T) {
 	var otherHits atomic.Int32
 	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
