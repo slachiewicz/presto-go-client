@@ -382,11 +382,11 @@ type failingRoundTripper struct {
 func (f *failingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	f.calls++
 	if f.calls <= f.failCount {
-		op := f.op
+		op, msg := f.op, "connection reset by peer"
 		if op == "" {
-			op = "dial"
+			op, msg = "dial", "connection refused"
 		}
-		return nil, &net.OpError{Op: op, Net: "tcp", Err: fmt.Errorf("connection reset by peer")}
+		return nil, &net.OpError{Op: op, Net: "tcp", Err: fmt.Errorf("%s", msg)}
 	}
 	return f.wrapped.RoundTrip(req)
 }
