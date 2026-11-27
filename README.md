@@ -193,7 +193,7 @@ client, err := presto.NewClient("http://presto-coordinator:8080")
 client, err := presto.NewClient("https://presto-coordinator:8443", "base64-encoded-credentials")
 
 // Trino mode with HTTPS
-client, err := presto.NewClient("http://trino-coordinator:8443")
+client, err := presto.NewClient("https://trino-coordinator:8443")
 client.IsTrino(true).ForceHTTPS(true)
 ```
 
