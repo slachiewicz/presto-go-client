@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -618,4 +619,37 @@ func TestDo_ErrorBodyIsTruncated(t *testing.T) {
 	require.Error(t, err)
 	assert.Less(t, len(err.Error()), maxErrorBodySize+100)
 	assert.True(t, strings.HasSuffix(err.Error(), "..."), "a truncated body is marked")
+}
+
+func TestDo_ErrorBodyTruncationBoundary(t *testing.T) {
+	tests := []struct {
+		name      string
+		body      string
+		truncated bool
+	}{
+		{"short body", "upstream down", false},
+		{"exactly the limit", strings.Repeat("x", maxErrorBodySize), false},
+		{"one byte over", strings.Repeat("x", maxErrorBodySize+1), true},
+		// A 3-byte rune straddles the limit; the cut must not split it.
+		{"multi-byte rune at the limit", strings.Repeat("x", maxErrorBodySize-1) + "€€", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusBadGateway)
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			defer srv.Close()
+			c, err := NewClient(srv.URL)
+			require.NoError(t, err)
+			s := c.NewSession()
+			req, err := s.NewRequest("GET", "/", nil)
+			require.NoError(t, err)
+
+			_, err = s.Do(context.Background(), req, nil)
+			require.Error(t, err)
+			assert.True(t, utf8.ValidString(err.Error()))
+			assert.Equal(t, tt.truncated, strings.HasSuffix(err.Error(), "..."))
+		})
+	}
 }

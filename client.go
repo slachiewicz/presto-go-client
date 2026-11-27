@@ -17,6 +17,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/rs/zerolog/log"
 )
@@ -462,7 +463,11 @@ func (s *Session) Do(ctx context.Context, req *http.Request, v any) (*http.Respo
 			return resp, fmt.Errorf("presto server error: %d (failed to read body: %w)", resp.StatusCode, readErr)
 		}
 		if len(body) > maxErrorBodySize {
-			body = append(body[:maxErrorBodySize], "..."...)
+			cut := maxErrorBodySize
+			for cut > 0 && !utf8.RuneStart(body[cut]) {
+				cut--
+			}
+			body = append(body[:cut], "..."...)
 		}
 		return resp, fmt.Errorf("presto server error: %d: %s", resp.StatusCode, string(body))
 	}
