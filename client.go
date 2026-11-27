@@ -405,7 +405,8 @@ func (s *Session) Do(ctx context.Context, req *http.Request, v any) (*http.Respo
 			}
 			// A POST that failed after the connection was made may have reached
 			// the server, and repeating it would run the statement again, so it
-			// is retried only when the connection could not be established.
+			// is retried only when the connection could not be established. Only
+			// POST /v1/statement is not idempotent; GET and DELETE are always retried.
 			if req.Method == http.MethodPost && !isDialError(err) {
 				return nil, err
 			}
